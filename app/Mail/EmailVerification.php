@@ -16,6 +16,8 @@ class EmailVerification extends Mailable
      *
      * @return void
      */
+    protected $user;
+    
     public function __construct()
     {
         //
