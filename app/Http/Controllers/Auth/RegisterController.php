@@ -71,7 +71,42 @@ class RegisterController extends Controller
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => bcrypt($data['password']),
+            //Add email_token com codificação base64 para o endereço de e-mail do usuário
             'email_token' => base64_encode($data['email']),
         ]);
+    }
+    
+    //Métodos adicionados
+    /**
+    * Lidar com um pedido de registro para o aplicativo.
+    *
+    * @param \Illuminate\Http\Request $request
+    * @return \Illuminate\Http\Response
+    */
+    public function register(Request $request)
+    {
+        $this->validator($request->all())->validate();
+        event(new Registered($user = $this->create($request->all())));
+        //O método Registro() foi substituido e agora acrescento duas linhas nele
+        dispatch(new SendVerificationEmail($user));
+        return view(‘verification’);
+    }
+    
+    /**
+    Desta forma, o e-mail é enviado para a fila e, em vez de iniciar sessão diretamente nesse usuário, eu o redirecionarei para outra página que solicitará que ele verifique seu e-mail para continuar. Em seguida, criei um novo método de verificação verify() que verificará o usuário e seu token. Em seguida, criarei as visualizações que liguei nestes dois métodos em Views/emailConfirm.blade.php.
+    */
+    /**
+    * Lidar com um pedido de registro para o aplicativo.
+    *
+    * @param $token
+    * @return \Illuminate\Http\Response
+    */
+    public function verify($token)
+    {
+        $user = User::where(‘email_token’,$token)->first();
+        $user->verified = 1;
+        if($user->save()){
+            return view(‘emailconfirm’,[‘user’=>$user]);
+        }
     }
 }
